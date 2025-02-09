@@ -6,16 +6,13 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
-echo "Registering HalfCheetahBroken-v2..."
-python -c "import envs; import gym; print('HalfCheetahBroken-v2' in gym.envs.registry.env_specs)"
-
 python drail/main.py \
-    --load-file ./expert_datasets/brokencheetah_expert.pt \
+    --load-file ./expert_datasets/HalfCheetah-v3_expert.pt\
     --alg=ppo \
     --clip-actions=True \
     --cuda=True \
     --entropy-coef=0.001 \
-    --env-name=HalfCheetahBroken-v2 \
+    --env-name=HalfCheetah-v3 \
     --eval-interval=20000 \
     --eval-num-processes=1 \
     --log-interval=1 \
