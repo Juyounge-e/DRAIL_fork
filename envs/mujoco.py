@@ -13,7 +13,7 @@ def register_halfcheetah_broken_env():
     gym.envs.registration.register(
         id="HalfCheetahBroken-v2",
         entry_point="envs.broken_envs:BrokenJoint",
-        max_episode_steps=500,
+        max_episode_steps=1000,
         reward_threshold=4800.0,
         kwargs={
             'env': half_cheetah.HalfCheetahEnv(),
