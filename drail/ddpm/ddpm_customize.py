@@ -19,7 +19,7 @@ import numpy as np
 import scipy.stats
 from geomloss import SamplesLoss
 import gym
-import d4rl # Import required to register environments
+# import d4rl # Import required to register environments
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import Sampler, SequentialSampler, BatchSampler
 from tqdm import tqdm

@@ -12,7 +12,7 @@ _ERROR_MESSAGE = 'Warning: %s failed to import. Set the environment variable D4R
 
 try:
     import d4rl.locomotion
-    import d4rl.hand_manipulation_suite
+    # import d4rl.hand_manipulation_suite
     import d4rl.pointmaze
     import d4rl.gym_minigrid
     import d4rl.gym_mujoco
@@ -43,7 +43,7 @@ except ImportError as e:
         print(e, file=sys.stderr)
         
 try:
-    import d4rl.gym_bullet
+    # import d4rl.gym_bullet
     import d4rl.pointmaze_bullet
 except ImportError as e:
     if not SUPPRESS_MESSAGES:
