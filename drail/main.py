@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, "./")
 
-import envs
+# import envs
 from functools import partial
 
 from rlf import run_policy
@@ -46,7 +46,7 @@ from goal_prox.models import GwImgEncoder
 from goal_prox.policies.grid_world_expert import GridWorldExpert
 
 
-from drail.drail_un import DRAIL_UN
+# from drail.drail_un import DRAIL_UN
 from drail.drail import DRAIL
 from drail.get_policy import get_ppo_policy, get_basic_policy, get_diffusion_policy, get_deep_ddpg_policy, get_deep_sac_policy, get_deep_iqlearn_policy, get_deep_basic_policy
 
@@ -71,7 +71,7 @@ def get_setup_dict():
         "sqil-deep": (SQIL(), get_deep_sac_policy),
         "sac": (SAC(), get_deep_sac_policy),
         "goal-gail": (GoalGAIL(), get_deep_ddpg_policy),
-        "drail-un": (DRAIL_UN(), get_ppo_policy),
+        # "drail-un": (DRAIL_UN(), get_ppo_policy),
         "drail": (DRAIL(), get_ppo_policy),
     }
 
