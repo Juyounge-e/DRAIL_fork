@@ -10,7 +10,7 @@ echo "Registering HalfCheetahBroken-v2..."
 python -c "import envs; import gym; print('HalfCheetahBroken-v2' in gym.envs.registry.env_specs)"
 
 python drail/main.py \
-    --load-file ./expert_datasets/brokencheetah_expert.pt \
+    --load-file ./expert_datasets/HalfCheetah-v3_expert.pt \
     --alg=ppo \
     --clip-actions=True \
     --cuda=True \
