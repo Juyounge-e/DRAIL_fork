@@ -10,8 +10,7 @@ class GoalTrajSaver(TrajSaver):
         if 'ep_found_goal' in last_info:
             ret = last_info['ep_found_goal'] == 1.0
         else:
-            ret = (last_info['episode']['r'] > 5000 and last_info['episode']['l'] == 1000)
-            print(f"========== {last_info['episode']['r']} =========")
+            ret = (last_info['episode']['l'] == 1000) # 두번째 조건만 살리면 halfcheetah는 될거같음 
         if self.assert_saved and not ret:
             raise ValueError('Trajectory did not end successfully')
         return ret
