@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import mujoco_py
-from stable_baselines import SAC
+# from stable_baselines import SAC
 import os
-from stable_baselines.common.callbacks import BaseCallback
+# from stable_baselines.common.callbacks import BaseCallback
 
 def evaluate_policy_on_env(env,
                            model,
@@ -48,52 +48,52 @@ def evaluate_policy_on_env(env,
 def set_rollout_policy(rollout_policy_path, seed=None):
     return SAC.load(rollout_policy_path, seed = seed)
 
-class TestGroundedCallback(BaseCallback):
-    """
-    Callback for testing grounded environment every `plot_freq` steps
+# class TestGroundedCallback(BaseCallback):
+#     """
+#     Callback for testing grounded environment every `plot_freq` steps
 
-    :param plot_freq: (int)
-    :param save_path: (str) Path to the folder where the model will be saved.
-    :param name_prefix: (str) Common prefix to the saved models
-    :param verbose: (int) Verbose mode (0: no output, 1: INFO)
-    :param true_transformation: (str) Set optimal action transformation to be compared with
-    """
-    def __init__(self, plot_freq: int, save_path: str, name_prefix='grounded', verbose=0, true_transformation = None):
-        super(TestGroundedCallback, self).__init__(verbose)
-        self.plot_freq = plot_freq
-        self.save_path = save_path
-        self.name_prefix = name_prefix
-        self.true_transformation = true_transformation
+#     :param plot_freq: (int)
+#     :param save_path: (str) Path to the folder where the model will be saved.
+#     :param name_prefix: (str) Common prefix to the saved models
+#     :param verbose: (int) Verbose mode (0: no output, 1: INFO)
+#     :param true_transformation: (str) Set optimal action transformation to be compared with
+#     """
+#     def __init__(self, plot_freq: int, save_path: str, name_prefix='grounded', verbose=0, true_transformation = None):
+#         super(TestGroundedCallback, self).__init__(verbose)
+#         self.plot_freq = plot_freq
+#         self.save_path = save_path
+#         self.name_prefix = name_prefix
+#         self.true_transformation = true_transformation
 
-    def _init_callback(self) -> None:
-        # Create folder if needed
-        if self.save_path is not None:
-            os.makedirs(self.save_path, exist_ok=True)
+#     def _init_callback(self) -> None:
+#         # Create folder if needed
+#         if self.save_path is not None:
+#             os.makedirs(self.save_path, exist_ok=True)
 
-    def _on_step(self) -> bool:
-        if self.n_calls % self.plot_freq == 0:
-            if self.n_calls % (self.plot_freq*10) == 0:
-                self.model.save(self.save_path + '/action_transformer_policy' + str(self.num_timesteps) + '.pkl')
-            # Create grnd env
-            grnd_env_plot = GroundedEnv(env=gym.make(self.model.env.spec.id),
-                                   action_tf_policy=self.model,
-                                   use_deterministic=True,
-                                   )
-            # Test
-            path = os.path.join(self.save_path, '{}_{}_steps'.format(self.name_prefix, self.num_timesteps))
-            if self.true_transformation is not None:
-                opt_gap = grnd_env_plot.test_grounded_environment(expt_path=path, true_transformation=self.true_transformation)
-                with open(self.save_path + "/opt_gap_"+ self.name_prefix +".txt", "a") as f:
-                    f.write("{}, {}\n".format(self.num_timesteps, opt_gap))
-                    f.close()
-            else:
-                grnd_env_plot.test_grounded_environment(expt_path=path)
-            del grnd_env_plot
-            if self.verbose > 1:
-                print("Testing grounded environment")
-        return True
+#     def _on_step(self) -> bool:
+#         if self.n_calls % self.plot_freq == 0:
+#             if self.n_calls % (self.plot_freq*10) == 0:
+#                 self.model.save(self.save_path + '/action_transformer_policy' + str(self.num_timesteps) + '.pkl')
+#             # Create grnd env
+#             grnd_env_plot = GroundedEnv(env=gym.make(self.model.env.spec.id),
+#                                    action_tf_policy=self.model,
+#                                    use_deterministic=True,
+#                                    )
+#             # Test
+#             path = os.path.join(self.save_path, '{}_{}_steps'.format(self.name_prefix, self.num_timesteps))
+#             if self.true_transformation is not None:
+#                 opt_gap = grnd_env_plot.test_grounded_environment(expt_path=path, true_transformation=self.true_transformation)
+#                 with open(self.save_path + "/opt_gap_"+ self.name_prefix +".txt", "a") as f:
+#                     f.write("{}, {}\n".format(self.num_timesteps, opt_gap))
+#                     f.close()
+#             else:
+#                 grnd_env_plot.test_grounded_environment(expt_path=path)
+#             del grnd_env_plot
+#             if self.verbose > 1:
+#                 print("Testing grounded environment")
+#         return True
 
-class EvalTrgCallback(BaseCallback):
+# class EvalTrgCallback(BaseCallback):
     """
     Callback for evaluation at target and grounded environment every `eval_freq` steps
 
@@ -228,7 +228,7 @@ class ATPEnv_Multiple(gym.Wrapper):
         """
         # input action is the delta transformed action for this Environment
         transformed_action = action + self.latest_act # 기존 액션(latest_act) + 변화량
-        transformed_action = np.clip(transformed_action, -self.env_max_act, self.env_max_act) # 기준을 넘자 않도록 
+        transformed_action = np.clip(transformed_action, - self.env_max_act, self.env_max_act) # 기준을 넘자 않도록 
 
         sim_next_state, sim_rew, sim_done, info = self.env.step(transformed_action)
         if self.dynamic_prob:
