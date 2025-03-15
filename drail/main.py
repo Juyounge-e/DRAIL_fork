@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, "./")
 
-import envs
+# import envs
 from functools import partial
 
 from rlf import run_policy
