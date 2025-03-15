@@ -269,6 +269,9 @@ class DRAILDiscrim(BaseIRLAlgo):
         expert_actions = self._adjust_action(expert_actions)
         expert_states = self._norm_expert_state(expert_batch['state'],
                 obsfilt)
+        # next_state 추가 
+        expert_n_states = self._norm_expert_state(expert_batch['next_state'], obsfilt)  
+
         
         agent_states = self._trans_agent_state(agent_batch['state'],
                 agent_batch['other_state'] if 'other_state' in agent_batch else None)
