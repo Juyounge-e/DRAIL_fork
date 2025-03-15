@@ -322,7 +322,7 @@ class Runner:
         if self.args.alg == 'dpf-deep' or self.args.alg == 'dpf':
             self.updater.modules[0].prox_func.load_state_dict(self.checkpointer.get_key("prox_func"))
         else:
-            if self.args.alg != 'bc' and self.args.alg != 'sac' and self.args.alg != 'dp' and self.args.alg != 'ppo':
+             if self.args.alg != 'bc' and self.args.alg != 'sac' and self.args.alg != 'dp' and self.args.alg != 'ppo'  and self.args.alg != 'PPO_sample':
                 self.updater.modules[0].discrim_net.load_state_dict(self.checkpointer.get_key("discrim_net"))
 
         if self.checkpointer.has_load_key("ob_rms"):
