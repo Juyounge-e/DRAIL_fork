@@ -73,9 +73,8 @@ class RolloutStorage(BaseStorage):
 
         if action_space.__class__.__name__ == "Discrete":
             self.actions = self.actions.long()
-
+            
         self.masks = torch.zeros(num_steps + 1, num_processes, 1)
-
         # Masks that indicate whether it's a true terminal state
         # or time limit end state
         self.bad_masks = torch.ones(num_steps + 1, num_processes, 1)
@@ -278,12 +277,15 @@ class RolloutStorage(BaseStorage):
 
         for indices in sampler:
             obs_batch = None
+            next_obs_batch = None
             other_obs_batch = {}
             for k, ob_shape in self.ob_keys.items():
                 if k is None:
                     obs_batch = self.obs[:-1].view(-1, *ob_shape)[indices]
+                    next_obs_batch = self.obs[1:].view(-1, *ob_shape)[indices]
                 elif k == self.args.policy_ob_key:
                     obs_batch = self.obs[k][:-1].view(-1, *ob_shape)[indices]
+                    next_obs_batch = self.obs[k][1:].view(-1, *ob_shape)[indices]
                 else:
                     other_obs_batch[k] = self.obs[k][:-1].view(-1, *ob_shape)[indices]
 
@@ -311,6 +313,7 @@ class RolloutStorage(BaseStorage):
 
             yield {
                 "state": obs_batch,
+                "next_state": next_obs_batch,
                 "other_state": other_obs_batch,
                 "reward": rewards_batch,
                 "hxs": hidden_states_batch,
