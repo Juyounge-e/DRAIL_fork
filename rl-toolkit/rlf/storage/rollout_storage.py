@@ -279,15 +279,21 @@ class RolloutStorage(BaseStorage):
             obs_batch = None
             next_obs_batch = None
             other_obs_batch = {}
+            # ADDED
+            other_next_obs_batch = {}
             for k, ob_shape in self.ob_keys.items():
                 if k is None:
                     obs_batch = self.obs[:-1].view(-1, *ob_shape)[indices]
+                    # ADDED 0320
                     next_obs_batch = self.obs[1:].view(-1, *ob_shape)[indices]
                 elif k == self.args.policy_ob_key:
                     obs_batch = self.obs[k][:-1].view(-1, *ob_shape)[indices]
                     next_obs_batch = self.obs[k][1:].view(-1, *ob_shape)[indices]
                 else:
                     other_obs_batch[k] = self.obs[k][:-1].view(-1, *ob_shape)[indices]
+                    # ADDED
+                    other_next_obs_batch[k] = self.obs[k][1:].view(-1, *ob_shape)[indices]
+
 
             assert obs_batch is not None, f"Found not find {self.args.policy_ob_key}"
 
@@ -313,8 +319,10 @@ class RolloutStorage(BaseStorage):
 
             yield {
                 "state": obs_batch,
+                # ADDED 0320
                 "next_state": next_obs_batch,
                 "other_state": other_obs_batch,
+                "other_next_state": other_next_obs_batch,
                 "reward": rewards_batch,
                 "hxs": hidden_states_batch,
                 "action": actions_batch,
