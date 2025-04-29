@@ -7,9 +7,9 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 project: 'drail-project'
-program: drail/main.py
+program: diffatp/main.py
 method: grid
-name: Walker-drail-5traj
+name: Walker-diffATP-5traj
 command:
   - ${env}
   - python3
@@ -18,16 +18,24 @@ command:
 
 parameters:
   seed:
-    values: [1, 2, 3, 4, 5]
+    values: [1, 2, 3, 4,5]
     # value: 1
   prefix:
-    value: "drail"
+    value: "diffATP"
   alg:
-    value: "drail"
+    value: "diffATP" # CHECK
   traj-load-path:
     value: ./expert_datasets/ppo_walker_5.pt
+  src-env-name:
+    value: Walker2d-v3
+  rollout-policy-path:
+    value: /home/imitation/DRAIL/expert_datasets/ppo_walker_expert_model.pt
+  deter_rollout: 
+    value: "true"
   env-name:
-    value: "Walker2d-v3"
+    value: augmented_MDP-v0 # Walker2d-v3
+  num-processes:
+    value: 1
   normalize-env:
     value: True
   cuda:
@@ -62,11 +70,11 @@ parameters:
     value: 0.001
 
   num-steps:                # Update policy storage's length
-    value: 32
+    value: 128
   num-epochs:               # Update policy epock
     value: 10
   num-mini-batch:           # For update policy
-    value: 4
+    value: 32
   drail-state-norm:
     value: True
   drail-reward-norm:
@@ -78,7 +86,7 @@ parameters:
     # values: [0.0002, 0.0001, 0.00005]
     value: 0.0001         # noise 2.00
   discrim-num-unit:
-    value: 128
+    value: 1024
     # values: [128, 256, 512, 1024]
   discrim-depth: 
     value: 4
