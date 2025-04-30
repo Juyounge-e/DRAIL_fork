@@ -283,24 +283,24 @@ class DiffATPDiscrim(DRAILDiscrim):
         if not self.args.drail_state_norm:
             return state['raw_obs'] if other_state is None else other_state['raw_obs']
 
-        s = rutils.get_def_obs(state) if other_state is None else rutils.get_def_obs(other_state)
+        state = rutils.get_def_obs(state) if other_state is None else rutils.get_def_obs(other_state)
         print(f"🔍 [agent before filt] shape: {s.shape}")
 
-        if isinstance(s, torch.Tensor):
-            s = s.cpu().numpy()
+        if isinstance(state, torch.Tensor):
+            state = state.cpu().numpy()
 
         if obsfilt is not None:
-            s = obsfilt(s, update=False)
+            state = obsfilt(state, update=False)
 
-        s = torch.tensor(s, dtype=torch.float32).to(self.args.device)
+        state = torch.tensor(state, dtype=torch.float32).to(self.args.device)
 
         expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]
-        if s.shape[1] < expected_dim:
-            padding = torch.zeros((s.shape[0], expected_dim - s.shape[1]), device=s.device)
-            s = torch.cat([s, padding], dim=1)
-            print(f"✅ [agent padded] shape: {s.shape}")
+        if state.shape[1] < expected_dim:
+            padding = torch.zeros((state.shape[0], expected_dim - state.shape[1]), device=s.device)
+            state = torch.cat([state, padding], dim=1)
+            print(f"✅ [agent padded] shape: {state.shape}")
         elif s.shape[1] > expected_dim:
-            print(f"⚠️ WARNING: Agent obs dim {s.shape[1]} > expected {expected_dim}")
+            print(f"⚠️ WARNING: Agent obs dim {state.shape[1]} > expected {expected_dim}")
 
         return s
 
