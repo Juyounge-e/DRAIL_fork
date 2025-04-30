@@ -284,7 +284,7 @@ class DiffATPDiscrim(DRAILDiscrim):
             return state['raw_obs'] if other_state is None else other_state['raw_obs']
 
         state = rutils.get_def_obs(state) if other_state is None else rutils.get_def_obs(other_state)
-        print(f"🔍 [agent before filt] shape: {s.shape}")
+        print(f"🔍 [agent before filt] shape: {state.shape}")
 
         if isinstance(state, torch.Tensor):
             state = state.cpu().numpy()
@@ -299,10 +299,10 @@ class DiffATPDiscrim(DRAILDiscrim):
             padding = torch.zeros((state.shape[0], expected_dim - state.shape[1]), device=s.device)
             state = torch.cat([state, padding], dim=1)
             print(f"✅ [agent padded] shape: {state.shape}")
-        elif s.shape[1] > expected_dim:
+        elif state.shape[1] > expected_dim:
             print(f"⚠️ WARNING: Agent obs dim {state.shape[1]} > expected {expected_dim}")
 
-        return s
+        return state
 
     def _compute_discrim_loss(self, agent_batch, expert_batch, obsfilt):
         expert_actions = expert_batch['actions'].to(self.args.device)
