@@ -1,3 +1,4 @@
+[custom_drail.py]
 import os
 import sys
 sys.path.insert(0, "./")
@@ -28,6 +29,8 @@ class DiffATPDiscriminator(Discriminator):
     def __init__(self, state_dim, action_dim, args, base_net, num_units=128):
         super(Discriminator, self).__init__()
         input_dim = state_dim + action_dim + state_dim
+        print("❗️ input_dim to MLPConditionDiffusion:", input_dim)
+        print("❗️ received state_dim:", state_dim)
         self.args = args
         self.base_net = False
 
@@ -39,15 +42,16 @@ class DiffATPDiscriminator(Discriminator):
         self.alphas_bar_sqrt = torch.sqrt(alphas_prod).to(self.args.device)
         self.one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_prod).to(self.args.device)
 
-        d_model = MLPConditionDiffusion(n_steps, self.args.label_dim, input_dim, num_units=num_units, depth=self.args.discrim_depth).to(self.args.device)
+        d_model = MLPConditionDiffusion(n_steps, cond_dim= self.args.label_dim, data_dim=input_dim, num_units=num_units, depth=self.args.discrim_depth).to(self.args.device)
         try:
             self.base_net = base_net.net.to(self.args.device)
         except:
             self.base_net = False
         self.model = d_model
+        print("❗️ MLPConditionDiffusion first layer in_features:", self.model.linears[0].in_features)
+        print("❗️ MLPConditionDiffusion initialized with:", "cond_dim =", self.args.label_dim, "data_dim =", input_dim)
 
     #0320
-    # sa_pair -> san_pair로 바꿔야하는지 
     def diffusion_loss(self, label, sas_pair, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, n_steps):
         batch_size = sas_pair.shape[0]
 
@@ -82,28 +86,35 @@ class DiffATPDiscriminator(Discriminator):
         #return torch.unsqueeze(torch.mean(e - output, dim=1), 1)
 
     # 0320
-    # next_state도 반영한 pair로 변경해야하는지 
     def diffusion_loss_fn(self, label, sas_pair):
         diff_loss = self.diffusion_loss(label, sas_pair, self.alphas_bar_sqrt, self.one_minus_alphas_bar_sqrt, self.n_steps)
     
         return diff_loss
 
     # 0320
-    # next_state 반영해야하나? 
     def forward(self, state, action, n_state, label):
-        
         # if self.base_net:
         #     state = self.base_net(state)
+        # 0402 modified 
+        # if self.base_net is not None:
+        #     state = self.base_net(state)
+        #     n_state = self.base_net(n_state)
+
         state_action_n_state = torch.cat([state, action, n_state], dim=1)
+        print("❗️ input to model:", state_action_n_state.shape) ##
         loss = self.diffusion_loss_fn(label, state_action_n_state)
         return loss
     
     # 0320
-    # state랑 같은 방식으로 next_state 처리할지?
     def p_sample_loop(self, state, action, n_state):
         
         # if self.base_net:
         #     state = self.base_net(state)
+        # 0402 modified
+        # if self.base_net is not None:
+        #     state = self.base_net(state)
+        #     n_state = self.base_net(n_state)
+            
         cond = torch.cat([state, action, n_state], dim=1).to(self.args.device)
         batch_size = cond.shape[0]
         cur_x = torch.randn(batch_size, self.args.label_dim).to(self.args.device)
@@ -166,13 +177,14 @@ class DiffATPDiscrim(DRAILDiscrim):
         self.policy = policy
         self.step = 0
         
-    # def _create_discrim(self):
-    #     ob_shape = rutils.get_obs_shape(self.policy.obs_space)
-    #     ac_dim = rutils.get_ac_dim(self.action_space)
-    #     base_net = self.policy.get_base_net_fn(ob_shape)
-    #     #* Change to Diffusion Model
-    #     discrim = self.get_discrim(base_net.output_shape[0], ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
-    #     return discrim.to(self.args.device)
+    def _create_discrim(self):
+        ob_shape = rutils.get_obs_shape(self.policy.obs_space)
+        ac_dim = rutils.get_ac_dim(self.action_space)
+        base_net = self.policy.get_base_net_fn(ob_shape) 
+        #* Change to Diffusion Model
+        #
+        discrim = self.get_discrim(base_net.output_shape[0], ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
+        return discrim.to(self.args.device)
 
     # def init(self, policy, args):
     #     super().init(policy, args)
@@ -246,20 +258,51 @@ class DiffATPDiscrim(DRAILDiscrim):
     def _norm_expert_state(self, state, obsfilt):
         if not self.args.drail_state_norm:
             return state
-        state = state.cpu().numpy()
+
+        print(f"🧩 [expert before pad] shape: {state.shape}")  # 디버깅
+
+        if isinstance(state, torch.Tensor):
+            state = state.cpu().numpy()  # ✅ GPU -> CPU
 
         if obsfilt is not None:
             state = obsfilt(state, update=False)
-        state = torch.tensor(state).to(self.args.device)
+
+        state = torch.tensor(state, dtype=torch.float32).to(self.args.device)
+
+        # ✅ 패딩 기준: agent (policy) obs_dim
+        expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]  # 여기 수정
+        if state.shape[1] < expected_dim:
+            pad = torch.zeros((state.shape[0], expected_dim - state.shape[1]), device=state.device)
+            state = torch.cat([state, pad], dim=1)
+
+        print(f"🧩 [expert after filt] shape: {state.shape}")  # 디버깅
         return state
-    
+
     # will be MODIFIED 0326
-    def _trans_agent_state(self, state, other_state=None):
+    def _trans_agent_state(self, state, other_state=None, obsfilt=None):
         if not self.args.drail_state_norm:
-            if other_state is None:
-                return state['raw_obs']
-            return other_state['raw_obs']
-        return rutils.get_def_obs(state)
+            return state['raw_obs'] if other_state is None else other_state['raw_obs']
+
+        s = rutils.get_def_obs(state) if other_state is None else rutils.get_def_obs(other_state)
+        print(f"🔍 [agent before filt] shape: {s.shape}")
+
+        if isinstance(s, torch.Tensor):
+            s = s.cpu().numpy()
+
+        if obsfilt is not None:
+            s = obsfilt(s, update=False)
+
+        s = torch.tensor(s, dtype=torch.float32).to(self.args.device)
+
+        expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]
+        if s.shape[1] < expected_dim:
+            padding = torch.zeros((s.shape[0], expected_dim - s.shape[1]), device=s.device)
+            s = torch.cat([s, padding], dim=1)
+            print(f"✅ [agent padded] shape: {s.shape}")
+        elif s.shape[1] > expected_dim:
+            print(f"⚠️ WARNING: Agent obs dim {s.shape[1]} > expected {expected_dim}")
+
+        return s
 
     def _compute_discrim_loss(self, agent_batch, expert_batch, obsfilt):
         expert_actions = expert_batch['actions'].to(self.args.device)
@@ -271,13 +314,13 @@ class DiffATPDiscrim(DRAILDiscrim):
         expert_n_states = self._norm_expert_state(expert_batch['next_state'], obsfilt)  
 
         agent_states = self._trans_agent_state(agent_batch['state'],
-                agent_batch['other_state'] if 'other_state' in agent_batch else None)
+                agent_batch['other_state'] if 'other_state' in agent_batch else None, obsfilt)
         agent_actions = agent_batch['action']
 
         # CHECK: agent_batch 형태 확인
         # print("agent_batch_keys :", agent_batch.keys())
         agent_n_states = self._trans_agent_state(agent_batch['next_state'],
-                agent_batch['other_next_state'] if 'other_next_state' in agent_batch else None)
+                agent_batch['other_next_state'] if 'other_next_state' in agent_batch else None, obsfilt)
         # print("agent_n_states :", agent_n_states)
 
         agent_actions = rutils.get_ac_repr(
@@ -309,49 +352,49 @@ class DiffATPDiscrim(DRAILDiscrim):
             return grad_pen
         return 0
 
-def wass_grad_pen_sas(
-    self, expert_state, expert_action, expert_n_state, policy_state, policy_action, policy_n_state, use_actions, disc_fn
-):
-    num_dims = len(expert_state.shape) - 1
-    alpha = torch.rand(expert_state.size(0), 1)
-    alpha_state = (
-        alpha.view(-1, *[1 for _ in range(num_dims)])
-        .expand_as(expert_state)
-        .to(expert_state.device)
-    )
-    mixup_data_state = alpha_state * expert_state + (1 - alpha_state) * policy_state
-    mixup_data_state.requires_grad = True
-    inputs = [mixup_data_state]
-
-    if use_actions:
-        alpha_action = alpha.expand_as(expert_action).to(expert_action.device)
-        mixup_data_action = (
-            alpha_action * expert_action + (1 - alpha_action) * policy_action
+    def wass_grad_pen_sas(
+        self, expert_state, expert_action, expert_n_state, policy_state, policy_action, policy_n_state, use_actions, disc_fn
+    ):
+        num_dims = len(expert_state.shape) - 1
+        alpha = torch.rand(expert_state.size(0), 1)
+        alpha_state = (
+            alpha.view(-1, *[1 for _ in range(num_dims)])
+            .expand_as(expert_state)
+            .to(expert_state.device)
         )
-        mixup_data_action.requires_grad = True
-        inputs.append(mixup_data_action)
-    else:
-        mixup_data_action = []
+        mixup_data_state = alpha_state * expert_state + (1 - alpha_state) * policy_state
+        mixup_data_state.requires_grad = True
+        inputs = [mixup_data_state]
 
-    alpha_n_state = alpha.expand_as(expert_n_state).to(expert_n_state.device)
-    mixup_data_n_state = alpha_n_state * expert_n_state + (1 - alpha_n_state) * policy_n_state
-    mixup_data_n_state.requires_grad = True
-    inputs.append(mixup_data_n_state)
+        if use_actions:
+            alpha_action = alpha.expand_as(expert_action).to(expert_action.device)
+            mixup_data_action = (
+                alpha_action * expert_action + (1 - alpha_action) * policy_action
+            )
+            mixup_data_action.requires_grad = True
+            inputs.append(mixup_data_action)
+        else:
+            mixup_data_action = []
 
-    disc = disc_fn(mixup_data_state, mixup_data_action, mixup_data_n_state)
-    ones = torch.ones(disc.size()).to(disc.device)
+        alpha_n_state = alpha.expand_as(expert_n_state).to(expert_n_state.device)
+        mixup_data_n_state = alpha_n_state * expert_n_state + (1 - alpha_n_state) * policy_n_state
+        mixup_data_n_state.requires_grad = True
+        inputs.append(mixup_data_n_state)
 
-    grad = autograd.grad(
-        outputs=disc,
-        inputs=inputs,
-        grad_outputs=ones,
-        create_graph=True,
-        retain_graph=True,
-        only_inputs=True,
-    )[0]
+        disc = disc_fn(mixup_data_state, mixup_data_action, mixup_data_n_state)
+        ones = torch.ones(disc.size()).to(disc.device)
 
-    grad_pen = (grad.norm(2, dim=1) - 1).pow(2).mean()
-    return grad_pen
+        grad = autograd.grad(
+            outputs=disc,
+            inputs=inputs,
+            grad_outputs=ones,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
+        )[0]
+
+        grad_pen = (grad.norm(2, dim=1) - 1).pow(2).mean()
+        return grad_pen
 
     def _compute_disc_val(self, state, action, n_state, label=None):
         # ADDED
