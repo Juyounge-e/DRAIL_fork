@@ -1,3 +1,4 @@
+[custom_drail.py]
 import os
 import sys
 sys.path.insert(0, "./")
@@ -102,10 +103,13 @@ class DiffATPDiscriminator(Discriminator):
 
         state_action_n_state = torch.cat([state, action, n_state], dim=1)
         print("❗️ input to model:", state_action_n_state.shape) ##
+<<<<<<< HEAD
         print("🔍 state:", state.shape)
         print("🔍 action:", action.shape)
         print("🔍 n_state:", n_state.shape)
         print("❗️input to model:", state_action_n_state.shape)
+=======
+>>>>>>> 811e979f769cdb2e0d43cc94ab66396c69100d8a
         loss = self.diffusion_loss_fn(label, state_action_n_state)
         return loss
     
@@ -262,6 +266,14 @@ class DiffATPDiscrim(DRAILDiscrim):
     def _norm_expert_state(self, state, obsfilt):
         if not self.args.drail_state_norm:
             return state
+<<<<<<< HEAD
+=======
+
+        print(f"🧩 [expert before pad] shape: {state.shape}")  # 디버깅
+
+        if isinstance(state, torch.Tensor):
+            state = state.cpu().numpy()  # ✅ GPU -> CPU
+>>>>>>> 811e979f769cdb2e0d43cc94ab66396c69100d8a
 
         print(f"🧩 [expert before pad] shape: {state.shape}")
 
@@ -279,16 +291,29 @@ class DiffATPDiscrim(DRAILDiscrim):
         if obsfilt is not None:
             state = obsfilt(state, update=False)
 
+<<<<<<< HEAD
         # (4) 다시 Tensor로 변환 후 반환
         state = torch.tensor(state, dtype=torch.float32).to(self.args.device)
 
         print(f"🧩 [expert after filt] shape: {state.shape}")
+=======
+        state = torch.tensor(state, dtype=torch.float32).to(self.args.device)
+
+        # ✅ 패딩 기준: agent (policy) obs_dim
+        expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]  # 여기 수정
+        if state.shape[1] < expected_dim:
+            pad = torch.zeros((state.shape[0], expected_dim - state.shape[1]), device=state.device)
+            state = torch.cat([state, pad], dim=1)
+
+        print(f"🧩 [expert after filt] shape: {state.shape}")  # 디버깅
+>>>>>>> 811e979f769cdb2e0d43cc94ab66396c69100d8a
         return state
 
     # will be MODIFIED 0326
     def _trans_agent_state(self, state, other_state=None, obsfilt=None):
         if not self.args.drail_state_norm:
             return state['raw_obs'] if other_state is None else other_state['raw_obs']
+<<<<<<< HEAD
        
         s = rutils.get_def_obs(state)
 
@@ -309,6 +334,29 @@ class DiffATPDiscrim(DRAILDiscrim):
             print(f"✅ [agent padded] shape: {s.shape}")
         elif s.shape[1] > expected_dim:
             print(f"⚠️ WARNING: Agent obs dim {s.shape[1]} > expected {expected_dim}")
+=======
+
+        state = rutils.get_def_obs(state) if other_state is None else rutils.get_def_obs(other_state)
+        print(f"🔍 [agent before filt] shape: {state.shape}")
+
+        if isinstance(state, torch.Tensor):
+            state = state.cpu().numpy()
+
+        if obsfilt is not None:
+            state = obsfilt(state, update=False)
+
+        state = torch.tensor(state, dtype=torch.float32).to(self.args.device)
+
+        expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]
+        if state.shape[1] < expected_dim:
+            padding = torch.zeros((state.shape[0], expected_dim - state.shape[1]), device=s.device)
+            state = torch.cat([state, padding], dim=1)
+            print(f"✅ [agent padded] shape: {state.shape}")
+        elif state.shape[1] > expected_dim:
+            print(f"⚠️ WARNING: Agent obs dim {state.shape[1]} > expected {expected_dim}")
+
+        return state
+>>>>>>> 811e979f769cdb2e0d43cc94ab66396c69100d8a
 
         return s
     
