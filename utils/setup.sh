@@ -6,7 +6,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
-pip install -r requirements.txt
+# pip install -r requirements.txt
 
 cd d4rl
 pip install -e .

@@ -88,4 +88,5 @@ parameters:
     value: 256
   label-dim:
     value: 10
-
+  num-processes:
+    value: 1

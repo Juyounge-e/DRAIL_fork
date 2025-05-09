@@ -6,6 +6,8 @@ import rlf.rl.utils as rutils
 from rlf.rl.envs import get_vec_normalize
 from rlf.storage import BaseStorage, RolloutStorage
 
+import torch 
+
 
 @attr.s(auto_attribs=True, slots=True)
 class AlgorithmSettings:

@@ -116,5 +116,3 @@ if __name__ == "__main__":
 #             yield indices
 
    
-if __name__ == "__main__":
-    run_policy(DiffATPSettings())

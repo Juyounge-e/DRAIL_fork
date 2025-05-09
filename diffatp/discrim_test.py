@@ -23,6 +23,7 @@ drail_discrim._load_expert_data(None, args)  # 전문가 데이터 로드
 
 for expert_batch in drail_discrim.expert_train_loader:
     if 'next_state' in expert_batch:
+        print("🔎 expert_batch keys:", expert_batch.keys())
         print(f"next_state Shape: {expert_batch['next_state'].shape}")
         print(f" state Shape: {expert_batch['state'].shape}")
         print(f"next_state Shape: {expert_batch['next_state']}")

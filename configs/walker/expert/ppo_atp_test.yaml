@@ -7,7 +7,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 project: 'drail-project'
-program: DiffATP/main.py
+program: diffatp/main.py
 method: grid
 name: Walker-ppo-atp
 command:
