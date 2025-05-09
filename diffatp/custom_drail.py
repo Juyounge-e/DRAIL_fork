@@ -1,4 +1,3 @@
-[custom_drail.py]
 import os
 import sys
 sys.path.insert(0, "./")
