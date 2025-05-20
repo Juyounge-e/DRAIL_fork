@@ -27,7 +27,7 @@ from diffatp.custom_drail import DiffATP
 
 def get_setup_dict():
     return {
-        "diffATP": (DiffATP(), get_ppo_policy),  
+        "diffATP": (DiffATP(src_obs_size=17), get_ppo_policy),  
         "ppo": (PPO(), get_ppo_policy),
     }
 
