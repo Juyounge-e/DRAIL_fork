@@ -62,8 +62,11 @@ class DiffATPDiscriminator(Discriminator):
             t = torch.full((batch_size,), step, device=self.args.device)
             t = t.unsqueeze(-1)
         else:
-            t = torch.randint(0, n_steps, size=(batch_size//2,)).to(self.args.device)
-            t = torch.cat([t, n_steps-1-t], dim=0) #[batch_size, 1]
+            # 0509 수정 
+            half_bs = max(batch_size // 2, 1)  # ← 최소 1 보장
+            t = torch.randint(0, n_steps, size=(half_bs,), device=self.args.device)
+            t = torch.cat([t, n_steps - 1 - t], dim=0)
+            t = t[:batch_size] 
             t = t.unsqueeze(-1)
         
         # coefficient of x0
