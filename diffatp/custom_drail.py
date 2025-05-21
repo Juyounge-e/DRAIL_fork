@@ -29,8 +29,8 @@ class DiffATPDiscriminator(Discriminator):
     def __init__(self, state_dim, action_dim, args, base_net, num_units=128):
         super(Discriminator, self).__init__()
         input_dim = state_dim + action_dim + state_dim
-        print("❗️ input_dim to MLPConditionDiffusion:", input_dim)
-        print("❗️ received state_dim:", state_dim)
+        # print("❗️ input_dim to MLPConditionDiffusion:", input_dim)
+        # print("❗️ received state_dim:", state_dim)
         self.args = args
         self.base_net = False
 
@@ -48,8 +48,8 @@ class DiffATPDiscriminator(Discriminator):
         except:
             self.base_net = False
         self.model = d_model
-        print("❗️ MLPConditionDiffusion first layer in_features:", self.model.linears[0].in_features)
-        print("❗️ MLPConditionDiffusion initialized with:", "cond_dim =", self.args.label_dim, "data_dim =", input_dim)
+        # print("❗️ MLPConditionDiffusion first layer in_features:", self.model.linears[0].in_features)
+        # print("❗️ MLPConditionDiffusion initialized with:", "cond_dim =", self.args.label_dim, "data_dim =", input_dim)
 
     #0320
     def diffusion_loss(self, label, sas_pair, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, n_steps):
@@ -106,11 +106,11 @@ class DiffATPDiscriminator(Discriminator):
         #     n_state = self.base_net(n_state)
 
         state_action_n_state = torch.cat([state, action, n_state], dim=1)
-        print("❗️ input to model:", state_action_n_state.shape) ##
-        print("🔍 state:", state.shape)
-        print("🔍 action:", action.shape)
-        print("🔍 n_state:", n_state.shape)
-        print("❗️input to model:", state_action_n_state.shape)
+        # print("❗️ input to model:", state_action_n_state.shape) ##
+        # print("🔍 state:", state.shape)
+        # print("🔍 action:", action.shape)
+        # print("🔍 n_state:", n_state.shape)
+        # print("❗️input to model:", state_action_n_state.shape)
         loss = self.diffusion_loss_fn(label, state_action_n_state)
         return loss
     
@@ -268,7 +268,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         if not self.args.drail_state_norm:
             return state
 
-        print(f"🧩 [expert before pad] shape: {state.shape}")
+        # print(f"🧩 [expert before pad] shape: {state.shape}")
 
         # (1) Tensor라면 numpy로 변환 (obsfilt는 numpy 기반)
         if isinstance(state, torch.Tensor):
@@ -287,7 +287,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         # (4) 다시 Tensor로 변환 후 반환
         state = torch.tensor(state, dtype=torch.float32).to(self.args.device)
 
-        print(f"🧩 [expert after filt] shape: {state.shape}")
+        # print(f"🧩 [expert after filt] shape: {state.shape}")
         return state
 
     # will be MODIFIED 0326
@@ -297,7 +297,7 @@ class DiffATPDiscrim(DRAILDiscrim):
        
         s = rutils.get_def_obs(state)
 
-        print(f"🔍 [agent before filt] shape: {s.shape}")
+        # print(f"🔍 [agent before filt] shape: {s.shape}")
 
         if isinstance(s, torch.Tensor):
             s = s.cpu().numpy()
@@ -311,10 +311,9 @@ class DiffATPDiscrim(DRAILDiscrim):
         if s.shape[1] < expected_dim:
             padding = torch.zeros((s.shape[0], expected_dim - s.shape[1]), device=s.device)
             s = torch.cat([s, padding], dim=1)
-            print(f"✅ [agent padded] shape: {s.shape}")
+            # print(f"✅ [agent padded] shape: {s.shape}")
         elif s.shape[1] > expected_dim:
             print(f"⚠️ WARNING: Agent obs dim {s.shape[1]} > expected {expected_dim}")
-
         return s
     
     def _compute_discrim_loss(self, agent_batch, expert_batch, obsfilt):
