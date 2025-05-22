@@ -29,7 +29,7 @@ class DiffATPDiscriminator(Discriminator):
     def __init__(self, state_dim, action_dim, args, base_net, num_units=128):
         super(Discriminator, self).__init__()
         self.args = args
-        state_dim = self.args.src_obs_size
+        # state_dim = self.args.src_obs_size
         input_dim = state_dim + action_dim + state_dim
         # input_dim -= 2*action_dim
         print("❗️ input_dim to MLPConditionDiffusion:", input_dim)
@@ -194,7 +194,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         #* Change to Diffusion Model
 
         # ✅ 여기서 args에 직접 넣어줌(0520)
-        self.args.src_obs_size = self.src_obs_size
+       # self.args.src_obs_size = self.src_obs_size
         discrim = self.get_discrim(base_net.output_shape[0], ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
         return discrim.to(self.args.device)
 
