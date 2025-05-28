@@ -43,7 +43,7 @@ class DiffATPSettings(RunSettings):
         if isinstance(algo, NestedAlgo) and isinstance(algo.modules[0], BaseILAlgo):
             algo.modules[0].set_transform_dem_dataset_fn(trim_episodes_trans)
         if isinstance(algo, SQIL):
-            algo.il_algo.set_transform_dxem_dataset_fn(trim_episodes_trans)
+            algo.il_algo.set_transform_dem_dataset_fn(trim_episodes_trans)
         return algo
 
     def get_logger(self):
