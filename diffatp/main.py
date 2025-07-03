@@ -27,7 +27,7 @@ from diffatp.custom_drail import DiffATP
 
 def get_setup_dict():
     return {
-        "diffATP": (DiffATP(), get_ppo_policy),  
+        "diffATP": (DiffATP(src_obs_size=17), get_ppo_policy),  
         "ppo": (PPO(), get_ppo_policy),
     }
 
@@ -43,7 +43,7 @@ class DiffATPSettings(RunSettings):
         if isinstance(algo, NestedAlgo) and isinstance(algo.modules[0], BaseILAlgo):
             algo.modules[0].set_transform_dem_dataset_fn(trim_episodes_trans)
         if isinstance(algo, SQIL):
-            algo.il_algo.set_transform_dxem_dataset_fn(trim_episodes_trans)
+            algo.il_algo.set_transform_dem_dataset_fn(trim_episodes_trans)
         return algo
 
     def get_logger(self):
@@ -116,5 +116,3 @@ if __name__ == "__main__":
 #             yield indices
 
    
-if __name__ == "__main__":
-    run_policy(DiffATPSettings())
