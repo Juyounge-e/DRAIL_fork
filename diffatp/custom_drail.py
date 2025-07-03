@@ -29,7 +29,7 @@ class DiffATPDiscriminator(Discriminator):
     def __init__(self, state_dim, action_dim, args, base_net, num_units=128):
         super(Discriminator, self).__init__()
         self.args = args
-        # state_dim = self.args.src_obs_size
+        state_dim = self.args.src_obs_size
         input_dim = state_dim + action_dim + state_dim
         # input_dim -= 2*action_dim
         print("❗️ input_dim to MLPConditionDiffusion:", input_dim)
@@ -76,15 +76,21 @@ class DiffATPDiscriminator(Discriminator):
         
         # coefficient of eps
         aml = one_minus_alphas_bar_sqrt[t]
-        label_input = torch.full((batch_size, self.args.label_dim), label).to(self.args.device)
+        label_input = torch.full((batch_size, self.args.label_dim), label).to(self.args.device).float()
+
         
         # generate random noise eps
         e = torch.randn_like(sas_pair).to(self.args.device)
 
         # model input
-        x = sas_pair*a + e*aml
+        x = (sas_pair*a + e*aml).float()
         
         # get predicted randome noise at time t
+        # print("x type:", type(x))
+        # print(x)
+        # print("label_input type:", type(label_input))
+        # print(label_input)
+        
         output = self.model(x, label_input, t.squeeze(-1))
         
         return (e - output).square().mean(dim=1, keepdim=True)
@@ -105,11 +111,11 @@ class DiffATPDiscriminator(Discriminator):
         #     state = self.base_net(state)
         #     n_state = self.base_net(n_state)
         state_action_n_state = torch.cat([state, action, n_state], dim=1)
-        print("❗️ input to model:", state_action_n_state.shape) #
-        print("🔍 state:", state.shape)
-        print("🔍 action:", action.shape)
-        print("🔍 n_state:", n_state.shape)
-        print("❗️input to model:", state_action_n_state.shape)
+        # print("❗️ input to model:", state_action_n_state.shape) #
+        # print("🔍 state:", state.shape)
+        # print("🔍 action:", action.shape)
+        # print("🔍 n_state:", n_state.shape)
+        # print("❗️input to model:", state_action_n_state.shape)
         loss = self.diffusion_loss_fn(label, state_action_n_state)
         return loss
     
@@ -194,7 +200,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         #* Change to Diffusion Model
 
         # ✅ 여기서 args에 직접 넣어줌(0520)
-       # self.args.src_obs_size = self.src_obs_size
+        self.args.src_obs_size = self.src_obs_size
         discrim = self.get_discrim(base_net.output_shape[0], ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
         return discrim.to(self.args.device)
 
@@ -267,21 +273,34 @@ class DiffATPDiscrim(DRAILDiscrim):
         return frame
 
     def _norm_expert_state(self, state, obsfilt):
+        # 0522 slicing 반영
         if not self.args.drail_state_norm:
             return state
         state = state.cpu().numpy()
 
+         # (2) 먼저 24차원으로 패딩 (obsfilt는 24차원 기준)
+        expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]
+        if state.shape[1] < expected_dim:
+            pad = np.zeros((state.shape[0], expected_dim - state.shape[1]))
+            state = np.concatenate([state, pad], axis=1)
+
         if obsfilt is not None:
             state = obsfilt(state, update=False)
+            
+        state = state[:, :self.args.src_obs_size]
         state = torch.tensor(state).to(self.args.device)
+
         return state
     
+
     def _trans_agent_state(self, state, other_state=None):
+        # state = state[:, :self.args.src_obs_size]
         if not self.args.drail_state_norm:
-            if other_state is None:
-                return state['raw_obs']
-            return other_state['raw_obs']
-        return rutils.get_def_obs(state)
+            raw = state['raw_obs'] if other_state is None else other_state['raw_obs']
+        else:
+            raw = rutils.get_def_obs(state)
+    
+        return raw[:, :self.args.src_obs_size]
 
     
     def _compute_discrim_loss(self, agent_batch, expert_batch, obsfilt):
@@ -294,13 +313,13 @@ class DiffATPDiscrim(DRAILDiscrim):
         expert_n_states = self._norm_expert_state(expert_batch['next_state'], obsfilt)  
 
         agent_states = self._trans_agent_state(agent_batch['state'],
-                agent_batch['other_state'] if 'other_state' in agent_batch else None, obsfilt)
+                agent_batch['other_state'] if 'other_state' in agent_batch else None)
         agent_actions = agent_batch['action']
 
         # CHECK: agent_batch 형태 확인
         # print("agent_batch_keys :", agent_batch.keys())
         agent_n_states = self._trans_agent_state(agent_batch['next_state'],
-                agent_batch['other_next_state'] if 'other_next_state' in agent_batch else None, obsfilt)
+                agent_batch['other_next_state'] if 'other_next_state' in agent_batch else None)
         # print("agent_n_states :", agent_n_states)
 
         agent_actions = rutils.get_ac_repr(
@@ -435,9 +454,10 @@ class DiffATPDiscrim(DRAILDiscrim):
         # plt.savefig(file_path)
         # return file_path
 
-    # def _compute_expert_loss(self, expert_d, expert_batch):
-    #     return  F.binary_cross_entropy(expert_d,
-    #             torch.ones(expert_d.shape).to(self.args.device))
+    # 0529 edited 
+    def _compute_expert_loss(self, expert_d, expert_batch):
+        return  F.binary_cross_entropy(expert_d,
+                torch.ones_like(expert_d))
 
     # def _compute_agent_loss(self, agent_d, agent_batch):
     #     return  F.binary_cross_entropy(agent_d,
