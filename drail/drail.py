@@ -25,6 +25,7 @@ from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 from rlf.exp_mgr.viz_utils import append_text_to_image
 import math
+import envs 
 
 # Does not necessarily have WB installed
 try:
