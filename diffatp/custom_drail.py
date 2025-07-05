@@ -526,7 +526,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         # ADDED
         # CHECK
         ########
-        print(type(storage))
+        # print(type(storage))
         n_state = self._trans_agent_state(storage.get_obs(step+1)) # TO BE MODIFIED
         # step+1이 범위 넘어가는 경우 발생.
         # transition_storage, rollout_storage에 따라 형식 바뀌어야함.
