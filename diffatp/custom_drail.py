@@ -242,12 +242,19 @@ class DiffATPDiscrim(DRAILDiscrim):
     # def _trans_batches(self, expert_batch, agent_batch):
     #     return expert_batch, agent_batch
 
-    # def get_env_settings(self, args):
-    #     settings = super().get_env_settings(args)
-    #     if not args.drail_state_norm:
-    #         settings.ret_raw_obs = True
-    #     settings.mod_render_frames_fn = self.mod_render_frames
-    #     return settings
+    def get_env_settings(self, args):
+        settings = super().get_env_settings(args)
+        if not args.drail_state_norm:
+            settings.ret_raw_obs = True
+        settings.mod_render_frames_fn = self.mod_render_frames
+
+        def get_delta_shape():
+            return self.action_space.shape
+        
+        settings.include_info_keys.extend([
+            ('delta', get_delta_shape)
+        ])
+        return settings
 
     def mod_render_frames(self, frame, env_cur_obs, env_cur_action, env_cur_reward,
             env_next_obs, **kwargs):
@@ -463,61 +470,74 @@ class DiffATPDiscrim(DRAILDiscrim):
     #     return  F.binary_cross_entropy(agent_d,
     #             torch.zeros(agent_d.shape).to(self.args.device))
 
-    # def _update_reward_func(self, storage, gradient_clip=False, t=1):
-    #     self.discrim_net.train()
+    def _update_reward_func(self, storage, gradient_clip=False, t=1):
+        self.discrim_net.train()
 
-    #     log_vals = defaultdict(lambda: 0)
-    #     obsfilt = self.get_env_ob_filt()
+        log_vals = defaultdict(lambda: 0)
+        obsfilt = self.get_env_ob_filt()
 
-    #     expert_sampler, agent_sampler = self._get_sampler(storage)
-    #     if agent_sampler is None:
-    #         # algo requested not to update this step
-    #         return {}
-    #     n = 0
-    #     for epoch_i in range(self.args.n_drail_epochs):
-    #         for expert_batch, agent_batch in zip(expert_sampler, agent_sampler):
-    #             expert_batch, agent_batch = self._trans_batches(
-    #                 expert_batch, agent_batch)
-    #             n += 1
-    #             expert_d, agent_d, grad_pen = self._compute_discrim_loss(agent_batch, expert_batch, obsfilt)
-    #             expert_loss = self._compute_expert_loss(expert_d, expert_batch)
-    #             agent_loss = self._compute_agent_loss(agent_d, agent_batch)
+        #0707 edited
+        if 'delta' in storage.add_data:
+            delta_info = storage.get_add_info('delta')
+
+            if storage.step > 0:
+                latest_delta = delta_info[storage.step - 1] # 가장 최근 delta
+
+                # # Delta 값 자체를 로깅 (각 차원별로)
+                # for i in range(latest_delta.shape[0]):
+                #     log_vals[f'delta_{i}'] = latest_delta[i].item()
                 
-    #             discrim_loss = expert_loss + agent_loss
+                log_vals['delta'] = torch.norm(latest_delta).item()
 
-    #             if self.args.disc_grad_pen != 0.0:
-    #                 if t <= self.args.disc_grad_pen_period:
-    #                     log_vals['grad_pen'] += grad_pen.item()
-    #                     total_loss = discrim_loss + self.args.disc_grad_pen * grad_pen
-    #                 else: 
-    #                     log_vals['grad_pen'] += 0
-    #                     total_loss = discrim_loss
-    #             else:
-    #                 total_loss = discrim_loss
+        expert_sampler, agent_sampler = self._get_sampler(storage)
+        if agent_sampler is None:
+            # algo requested not to update this step
+            return {}
+        n = 0
+        for epoch_i in range(self.args.n_drail_epochs):
+            for expert_batch, agent_batch in zip(expert_sampler, agent_sampler):
+                expert_batch, agent_batch = self._trans_batches(
+                    expert_batch, agent_batch)
+                n += 1
+                expert_d, agent_d, grad_pen = self._compute_discrim_loss(agent_batch, expert_batch, obsfilt)
+                expert_loss = self._compute_expert_loss(expert_d, expert_batch)
+                agent_loss = self._compute_agent_loss(agent_d, agent_batch)
                 
-    #             self.opt.zero_grad()
-    #             total_loss.backward()
-    #             if gradient_clip:
-    #                 torch.nn.utils.clip_grad_norm_(self.discrim_net.parameters(), max_norm=1.0)
-    #             self.opt.step()
+                discrim_loss = expert_loss + agent_loss
 
-    #             log_vals['discrim_loss'] += discrim_loss.item()
-    #             log_vals['expert_loss'] += expert_loss.item()
-    #             log_vals['agent_loss'] += agent_loss.item()
-    #             log_vals['expert_disc_val'] += expert_d.mean().item()
-    #             log_vals['agent_disc_val'] += agent_d.mean().item()
-    #             log_vals['agent_reward'] += ((agent_d + 1e-20).log() - (1 - agent_d + 1e-20).log()).mean().item()
-    #             log_vals['dm_update_data'] += len(expert_batch)
-    #             self.step += self.expert_train_loader.batch_size
-    #     for k in log_vals:
-    #         if k[0] != '_':
-    #             log_vals[k] /= n
-    #     if self.args.env_name[:4] == "Sine" and (self.step // (self.expert_train_loader.batch_size * n)) % 100 == 1 :
-    #         # log_vals["_reward_map"] = self.plot_reward_map(self.step)
-    #         log_vals["_disc_val_map"] = self.plot_disc_val_map(self.step)
+                if self.args.disc_grad_pen != 0.0:
+                    if t <= self.args.disc_grad_pen_period:
+                        log_vals['grad_pen'] += grad_pen.item()
+                        total_loss = discrim_loss + self.args.disc_grad_pen * grad_pen
+                    else: 
+                        log_vals['grad_pen'] += 0
+                        total_loss = discrim_loss
+                else:
+                    total_loss = discrim_loss
+                
+                self.opt.zero_grad()
+                total_loss.backward()
+                if gradient_clip:
+                    torch.nn.utils.clip_grad_norm_(self.discrim_net.parameters(), max_norm=1.0)
+                self.opt.step()
 
-    #     log_vals['dm_update_data'] *= n
-    #     return log_vals
+                log_vals['discrim_loss'] += discrim_loss.item()
+                log_vals['expert_loss'] += expert_loss.item()
+                log_vals['agent_loss'] += agent_loss.item()
+                log_vals['expert_disc_val'] += expert_d.mean().item()
+                log_vals['agent_disc_val'] += agent_d.mean().item()
+                log_vals['agent_reward'] += ((agent_d + 1e-20).log() - (1 - agent_d + 1e-20).log()).mean().item()
+                log_vals['dm_update_data'] += len(expert_batch)
+                self.step += self.expert_train_loader.batch_size
+        for k in log_vals:
+            if k[0] != '_':
+                log_vals[k] /= n
+        if self.args.env_name[:4] == "Sine" and (self.step // (self.expert_train_loader.batch_size * n)) % 100 == 1 :
+            # log_vals["_reward_map"] = self.plot_reward_map(self.step)
+            log_vals["_disc_val_map"] = self.plot_disc_val_map(self.step)
+
+        log_vals['dm_update_data'] *= n
+        return log_vals
     
     def _compute_discrim_reward(self, storage, step, add_info):
         state = self._trans_agent_state(storage.get_obs(step))
