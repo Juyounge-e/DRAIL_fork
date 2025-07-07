@@ -136,6 +136,8 @@ class ATPEnv_Multiple(gym.Wrapper):
             self.rew_list.append(sim_rew)
 
         info['transformed_action'] = transformed_action # 기록
+        # 0707 edited 
+        info['delta'] = action
 
         # get target policy action
         step_info = get_empty_step_info()
