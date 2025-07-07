@@ -248,7 +248,7 @@ class DiffATPDiscrim(DRAILDiscrim):
             settings.ret_raw_obs = True
         settings.mod_render_frames_fn = self.mod_render_frames
 
-        def get_delta_shape():
+        def get_delta_shape(envs):
             return self.action_space.shape
         
         settings.include_info_keys.extend([
@@ -476,18 +476,21 @@ class DiffATPDiscrim(DRAILDiscrim):
         log_vals = defaultdict(lambda: 0)
         obsfilt = self.get_env_ob_filt()
 
-        #0707 edited
+        #0707 edited        
         if 'delta' in storage.add_data:
             delta_info = storage.get_add_info('delta')
 
-            if storage.step > 0:
-                latest_delta = delta_info[storage.step - 1] # 가장 최근 delta
+            if len(delta_info) > 0:
+                # Use current step, but ensure we don't go out of bounds
+                step_idx = min(storage.step, len(delta_info) - 1)
+                latest_delta = delta_info[step_idx] # 가장 최근 delta
+                delta_norm = torch.norm(latest_delta).item()
 
                 # # Delta 값 자체를 로깅 (각 차원별로)
                 # for i in range(latest_delta.shape[0]):
                 #     log_vals[f'delta_{i}'] = latest_delta[i].item()
                 
-                log_vals['delta'] = torch.norm(latest_delta).item()
+                log_vals['delta'] = delta_norm
 
         expert_sampler, agent_sampler = self._get_sampler(storage)
         if agent_sampler is None:
@@ -536,8 +539,9 @@ class DiffATPDiscrim(DRAILDiscrim):
             # log_vals["_reward_map"] = self.plot_reward_map(self.step)
             log_vals["_disc_val_map"] = self.plot_disc_val_map(self.step)
 
-        log_vals['dm_update_data'] *= n
+        log_vals['dm_update_data'] *= n  
         return log_vals
+    
     
     def _compute_discrim_reward(self, storage, step, add_info):
         state = self._trans_agent_state(storage.get_obs(step))
