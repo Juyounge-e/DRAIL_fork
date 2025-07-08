@@ -484,13 +484,13 @@ class DiffATPDiscrim(DRAILDiscrim):
                 # Use current step, but ensure we don't go out of bounds
                 step_idx = min(storage.step, len(delta_info) - 1)
                 latest_delta = delta_info[step_idx] # 가장 최근 delta
-                delta_norm = torch.norm(latest_delta).item()
+                delta_mean = torch.mean(torch.abs(latest_delta)).item() # 절댓값의 평균
 
                 # # Delta 값 자체를 로깅 (각 차원별로)
                 # for i in range(latest_delta.shape[0]):
                 #     log_vals[f'delta_{i}'] = latest_delta[i].item()
                 
-                log_vals['delta'] = delta_norm
+                log_vals['delta_mean'] = delta_mean
 
         expert_sampler, agent_sampler = self._get_sampler(storage)
         if agent_sampler is None:
