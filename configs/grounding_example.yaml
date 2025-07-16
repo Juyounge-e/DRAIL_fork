@@ -1,0 +1,94 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+
+project: 'drail-project'
+program: diffatp/run_policy_grounding.py
+method: grid
+name: HalfCheetah-grounding
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
+
+parameters:
+  seed:
+    values: [1, 2, 3, 4, 5]
+    # value: 1
+  
+  # Environment settings
+  src-env:
+    value: "HalfCheetah-v3"
+  trg-env:
+    value: "HalfCheetah-v3"
+  src-env-name:
+    value: "HalfCheetah-v3"
+  env-name:
+    value: "augmented_MDP-v0"
+  
+  # Grounding specific settings
+  demo-sub-dir:
+    value: "HalfCheetah"
+  rollout-set:
+    value: "MS"
+  num-src:
+    value: 1
+  n-transitions:
+    value: 2000
+  
+  # Policy paths
+  rollout-policy-path:
+    value: "data/models/initial_policies/MS/HalfCheetah-v3/policy1.pt"
+  traj-load-path:
+    value: "./expert_datasets/halfcheetah_expert.pt"
+  
+  # Training settings
+  training-steps-atp:
+    value: 1000000
+  training-steps-policy:
+    value: 1000000
+  alg:
+    value: "diffATP"
+  
+  # General settings
+  device:
+    value: "cuda"
+  num-processes:
+    value: 1
+  normalize-env:
+    value: True
+  cuda:
+    value: True
+  
+  # Evaluation settings
+  eval-num-processes:
+    value: 1
+  eval-interval:
+    value: 2000
+  save-interval:
+    value: 100000
+  
+  # Flags
+  deterministic-atp:
+    value: True
+  deter-rollout:
+    value: True
+  collect-demo:
+    value: False
+  eval:
+    value: True
+  plot:
+    value: True
+  
+  # Logging
+  namespace:
+    value: "grounding_test"
+  no-wb:
+    value: False
+  verbose:
+    value: 1 

@@ -154,8 +154,8 @@ def create_grounded_environment(args, atp_policy, deterministic=True):
 
 def main():
     parser = argparse.ArgumentParser(description='Multi-source Grounding for DRAIL')
-    parser.add_argument('--src_env', default='HalfCheetah-v3', help="Name of source environment")
-    parser.add_argument('--trg_env', default='HalfCheetah-v3', help="Name of target environment")
+    parser.add_argument('--src_env', default='HalfCheetah-v2', help="Name of source environment")
+    parser.add_argument('--trg_env', default='HalfCheetahBroken-v2', help="Name of target environment")
     parser.add_argument('--demo_sub_dir', default='HalfCheetah', help="Subdirectory for demonstration")
     parser.add_argument('--rollout_set', default='MS', help='Types of rollout policy set')
     parser.add_argument('--training_steps_atp', default=int(1e6), type=int, help="Total time steps to learn ATP")
@@ -175,7 +175,7 @@ def main():
     parser.add_argument('--num_processes', default=1, type=int, help="Number of processes")
     parser.add_argument('--alg', default='diffATP', help="Algorithm to use")
     parser.add_argument('--env_name', default='augmented_MDP-v0', help="Environment name for training")
-    parser.add_argument('--src_env_name', default='HalfCheetah-v3', help="Source environment name")
+    parser.add_argument('--src_env_name', default='HalfCheetah-v2', help="Source environment name")
     parser.add_argument('--rollout_policy_path', default=None, help="Path to rollout policies")
     parser.add_argument('--traj_load_path', default=None, help="Path to trajectory data")
     parser.add_argument('--config_path', default=None, help="Path to config file")
