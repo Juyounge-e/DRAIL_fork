@@ -14,7 +14,7 @@ from collections import OrderedDict
 sys.path.insert(0, "./")
 
 import gym
-from diffatp.atp_envs import GroundedEnv
+from diffatp.grounded_env import GroundedEnv
 from diffatp.atp_envs import ATPEnv_Multiple
 from diffatp.main import DiffATPSettings, get_setup_dict
 from rlf import run_policy
@@ -161,14 +161,14 @@ def main():
     parser.add_argument('--training_steps_atp', default=int(1e6), type=int, help="Total time steps to learn ATP")
     parser.add_argument('--training_steps_policy', default=int(1e6), type=int, help="Total time steps to learn agent policy")
     parser.add_argument('--expt_number', default=1, type=int, help="Experiment number used for random seed")
-    parser.add_argument('--deterministic_atp', action='store_true', help="Deterministic ATP in grounded environment")
+    parser.add_argument('--deterministic_atp', type=lambda x: x.lower() == 'true', default=False, help="Deterministic ATP in grounded environment")
     parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1, type=int)
     parser.add_argument('--n-episodes', help='Number of expert episodes', type=int, default=None)
     parser.add_argument('--n-transitions', help='Number of expert transitions', type=int, default=2000)
-    parser.add_argument('--single_pol', action='store_true', help="Use single source policy")
+    parser.add_argument('--single_pol', type=lambda x: x.lower() == 'true', default=False, help="Use single source policy")
     parser.add_argument('--num_src', default=1, type=int, help="Number of rollout policies")
-    parser.add_argument('--collect_demo', action='store_true', help="Collect new samples from target environment")
-    parser.add_argument('--deter_rollout', action='store_true', help="Deploy rollout policy deterministically")
+    parser.add_argument('--collect_demo', type=lambda x: x.lower() == 'true', default=False, help="Collect new samples from target environment")
+    parser.add_argument('--deter_rollout', type=lambda x: x.lower() == 'true', default=False, help="Deploy rollout policy deterministically")
     
     # DRAIL project specific arguments
     parser.add_argument('--device', default='cuda', help="Device to use")
@@ -182,9 +182,9 @@ def main():
     
     # Output and logging
     parser.add_argument('--namespace', default="grounding_test", type=str, help="Namespace for experiments")
-    parser.add_argument('--no_wb', action='store_true', help="Disable wandb logging")
-    parser.add_argument('--eval', action='store_true', help="Evaluate after training")
-    parser.add_argument('--plot', action='store_true', help="Visualize action transformer policy")
+    parser.add_argument('--no_wb', type=lambda x: x.lower() == 'true', default=False, help="Disable wandb logging")
+    parser.add_argument('--eval', type=lambda x: x.lower() == 'true', default=False, help="Evaluate after training")
+    parser.add_argument('--plot', type=lambda x: x.lower() == 'true', default=False, help="Visualize action transformer policy")
     
     args = parser.parse_args()
     
