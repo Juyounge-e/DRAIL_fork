@@ -7,12 +7,12 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 python drail/main.py \
-    --load-file ./expert_datasets/HalfCheetah-v3_expert.pt\
+    --load-file /home/imitation/DRAIL/data/trained_models/HalfCheetah-v2/73-HC-1-PJ-ppo/model_3051.pt \
     --alg=ppo \
     --clip-actions=True \
     --cuda=True \
     --entropy-coef=0.001 \
-    --env-name=HalfCheetah-v3 \
+    --env-name=HalfCheetahBroken-v2 \
     --eval-interval=20000 \
     --eval-num-processes=1 \
     --log-interval=1 \

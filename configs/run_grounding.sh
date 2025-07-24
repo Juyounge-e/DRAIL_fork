@@ -1,0 +1,18 @@
+python3 diffatp/run_policy_grounding.py \
+  --src_env "HalfCheetah-v3" \
+  --trg_env "HalfCheetahBroken-v2" \
+  --demo_sub_dir "BrokenCheetah" \
+  --rollout_set "MS" \
+  --training_steps_atp 100000 \
+  --training_steps_policy 100000 \
+  --namespace "test_grounding" \
+  --expt_number 1 \
+  --deterministic_atp True \
+  --verbose 1 \
+  --n-transitions 500 \
+  --num_src 1 \
+  --alg "diffATP" \
+  --env_name "augmented_MDP-v0" \
+  --device "cuda" \
+  --eval True \
+  --plot True
