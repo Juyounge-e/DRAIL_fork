@@ -74,7 +74,7 @@ class GroundedEnv(gym.Wrapper):
         
         # Add policy index for ATP (state=17 + action=6 + policy_idx=1 = 24)
         policy_index = torch.zeros(lastest_obs_tensor.shape[0], 1, device=lastest_obs_tensor.device)
-        concat_sa = torch.cat([self.latest_obs_tensor, action_tensor, policy_index], dim=1)
+        concat_sa = torch.cat([lastest_obs_tensor, action_tensor, policy_index], dim=1)
 
         # Get action transformation using rl-toolkit policy interface
         step_info = get_empty_step_info()
