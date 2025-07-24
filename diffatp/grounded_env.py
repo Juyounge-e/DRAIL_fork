@@ -12,14 +12,14 @@ from rlf.policies.base_policy import get_empty_step_info
 
 class GroundedEnv(gym.Wrapper):
     """
-    Defines the grounded environment adapted for DRAIL project structure
+    Defines the grounded environment
     """
     def __init__(self,
-                 env,
-                 action_tf_policy,
-                 args,
-                 use_deterministic=True,
-                 ):
+                env,
+                action_tf_policy,
+                args,
+                use_deterministic=True,
+                ):
         super(GroundedEnv, self).__init__(env)
         self.args = args
         
@@ -44,7 +44,7 @@ class GroundedEnv(gym.Wrapper):
         self.transformed_action_space = spaces.Box(-max_act, max_act, dtype=np.float32)
         self.use_deterministic = use_deterministic
         
-        # Initialize policy states for rl-toolkit interface
+        # Initialize policy states for rl-toolkit 
         self.hidden_states = {}
         if hasattr(self.action_tf_policy, 'get_storage_hidden_states'):
             for k, dim in self.action_tf_policy.get_storage_hidden_states().items():
@@ -59,13 +59,6 @@ class GroundedEnv(gym.Wrapper):
         if self.num_simul > 1:
             idx = np.random.randint(0, self.num_simul)
             self.action_tf_policy = self.atp_list[idx]
-            
-        # Reset hidden states
-        if hasattr(self.action_tf_policy, 'get_storage_hidden_states'):
-            for k, dim in self.action_tf_policy.get_storage_hidden_states().items():
-                self.hidden_states[k] = torch.zeros(1, dim).to(self.args.device)
-        
-        self.eval_masks = torch.ones(1, 1, device=self.args.device)
         return self.latest_obs
 
     def step(self, action):
@@ -77,9 +70,11 @@ class GroundedEnv(gym.Wrapper):
         else:
             action_tensor = action.unsqueeze(0).float().to(self.args.device)
 
-        # Prepare state-action concatenation
-        obs_tensor = torch.from_numpy(self.latest_obs).unsqueeze(0).float().to(self.args.device)
-        concat_sa = torch.cat([obs_tensor, action_tensor], dim=1)
+        lastest_obs_tensor = torch.from_numpy(self.latest_obs).unsqueeze(0).float().to(self.args.device)
+        
+        # Add policy index for ATP (state=17 + action=6 + policy_idx=1 = 24)
+        policy_index = torch.zeros(lastest_obs_tensor.shape[0], 1, device=lastest_obs_tensor.device)
+        concat_sa = torch.cat([self.latest_obs_tensor, action_tensor, policy_index], dim=1)
 
         # Get action transformation using rl-toolkit policy interface
         step_info = get_empty_step_info()
@@ -116,10 +111,9 @@ class GroundedEnv(gym.Wrapper):
             device=self.args.device,
         ).unsqueeze(0)
 
-        # Store information
         info['transformed_action'] = transformed_action
-        info['delta_transformation'] = delta_transformed_action
-        info['raw_action'] = action_np
+        # info['delta_transformation'] = delta_transformed_action
+        # info['raw_action'] = action_np
         
         if self.time_step_counter <= 1e4:
             self.transformed_action_list.append(transformed_action.copy())
@@ -139,16 +133,12 @@ class GroundedEnv(gym.Wrapper):
         self.raw_actions_list = []
 
     def plot_action_transformation(self,
-                                   expt_path=None,
-                                   show_plot=False,
-                                   max_points=3000,
-                                   true_transformation=None,
-                                   logger=None):
-        """Graphs transformed actions vs input actions with project logging integration"""
-        if len(self.raw_actions_list) == 0:
-            print("No action data collected yet")
-            return 0, 0, None
-            
+                                expt_path=None,
+                                show_plot=False,
+                                max_points=3000,
+                                true_transformation=None,
+                                logger=None):
+        """Graphs transformed actions vs input actions"""     
         num_action_space = self.env.action_space.shape[0]
         action_low = self.env.action_space.low[0]
         action_high = self.env.action_space.high[0]
@@ -171,12 +161,16 @@ class GroundedEnv(gym.Wrapper):
         
         # Log metrics through project logging system
         if logger is not None:
-            logger.log_vals({
-                'grounded_env/mean_delta': mean_delta,
-                'grounded_env/max_delta': max_delta,
-                'grounded_env/opt_gap': opt_gap if opt_gap is not None else 0.0,
-                'grounded_env/num_samples': len(raw_actions)
-            }, self.time_step_counter)
+            try:
+                logger.log_vals({
+                    'grounded_env/mean_delta': mean_delta,
+                    'grounded_env/max_delta': max_delta,
+                    'grounded_env/opt_gap': opt_gap if opt_gap is not None else 0.0,
+                    'grounded_env/num_samples': len(raw_actions)
+                }, self.time_step_counter)
+            except (AttributeError, Exception) as e:
+                print(f"Warning: Logger error (skipping): {e}")
+                # Continue without logging
 
         print(f"Mean delta transformed_action: {mean_delta}")
         print(f"Max delta: {max_delta}")
@@ -200,7 +194,7 @@ class GroundedEnv(gym.Wrapper):
         for act_num in range(num_action_space):
             ax = fig.add_subplot(1, num_action_space, act_num+1)
             ax.plot(raw_actions[:, act_num], transformed_actions[:, act_num], 
-                   colors[act_num], alpha=0.7, markersize=2)
+                colors[act_num], alpha=0.7, markersize=2)
             
             if true_transformation is not None:
                 if true_transformation == 'Broken':
@@ -234,13 +228,13 @@ class GroundedEnv(gym.Wrapper):
         return mean_delta, max_delta, opt_gap
 
     def test_grounded_environment(self,
-                                  expt_path,
-                                  target_policy=None,
-                                  random=True,
-                                  true_transformation=None,
-                                  num_steps=2048,
-                                  deter_target=False,
-                                  logger=None):
+                                expt_path,
+                                target_policy=None,
+                                random=True,
+                                true_transformation=None,
+                                num_steps=2048,
+                                deter_target=False,
+                                logger=None):
         """Tests the grounded environment for action transformation"""
         print("TESTING GROUNDED ENVIRONMENT")
         self.reset_saved_actions()
