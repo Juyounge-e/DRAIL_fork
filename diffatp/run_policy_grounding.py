@@ -24,6 +24,7 @@ from goal_prox.method.utils import trim_episodes_trans
 from goal_prox.envs.goal_traj_saver import GoalTrajSaver
 from rlf.rl.loggers.wb_logger import WbLogger
 from rlf.rl.loggers.base_logger import BaseLogger
+from rlf.exp_mgr import config_mgr
 
 
 def collect_demo(args, generate_demo=False, save_path=None, rollout_policies_paths=None):
@@ -107,7 +108,69 @@ class GroundingTrainingCallback:
 
 
 def load_rollout_policies(args, rollout_policies_paths):
-    """Load rollout policies using DRAIL project structure"""
+    
+    # Based on configs/halfcheetah/ppo.yaml and configs/walker/expert/ppo.yaml
+    if not hasattr(args, 'recurrent_policy'):
+        args.recurrent_policy = False
+    if not hasattr(args, 'hidden_size'):
+        args.hidden_size = 256  # ppo-hidden-dim from config
+    if not hasattr(args, 'ppo_hidden_dim'):
+        args.ppo_hidden_dim = 256  # from config
+    if not hasattr(args, 'ppo_layers'):
+        args.ppo_layers = 2  # typical default for PPO
+    if not hasattr(args, 'cuda'):
+        args.cuda = (args.device == 'cuda')
+    if not hasattr(args, 'log_dir'):
+        args.log_dir = './logs'
+    if not hasattr(args, 'prefix'):
+        args.prefix = 'ppo'  # from config
+    if not hasattr(args, 'seed'):
+        args.seed = 1  # from config
+    if not hasattr(args, 'policy_ob_key'):
+        args.policy_ob_key = None
+    if not hasattr(args, 'use_proper_time_limits'):
+        args.use_proper_time_limits = True
+    if not hasattr(args, 'gamma'):
+        args.gamma = 0.99
+    if not hasattr(args, 'lr'):
+        args.lr = 0.0001  # from config
+    if not hasattr(args, 'eps'):
+        args.eps = 1e-5
+    if not hasattr(args, 'max_grad_norm'):
+        args.max_grad_norm = 0.5  # from config
+    if not hasattr(args, 'num_steps'):
+        args.num_steps = 256  # from config
+    if not hasattr(args, 'ppo_epoch'):
+        args.ppo_epoch = 10  # num-epochs from config
+    if not hasattr(args, 'num_epochs'):
+        args.num_epochs = 10  # alias for ppo_epoch
+    if not hasattr(args, 'num_mini_batch'):
+        args.num_mini_batch = 32  # from config
+    if not hasattr(args, 'clip_param'):
+        args.clip_param = 0.2
+    if not hasattr(args, 'clip_actions'):
+        args.clip_actions = True  # from config
+    if not hasattr(args, 'value_loss_coef'):
+        args.value_loss_coef = 0.5
+    if not hasattr(args, 'entropy_coef'):
+        args.entropy_coef = 0.001  # from config
+    if not hasattr(args, 'use_gae'):
+        args.use_gae = True
+    if not hasattr(args, 'gae_lambda'):
+        args.gae_lambda = 0.95
+    if not hasattr(args, 'use_linear_lr_decay'):
+        args.use_linear_lr_decay = False
+    if not hasattr(args, 'normalize_env'):
+        args.normalize_env = True  # from config
+    if not hasattr(args, 'eval_interval'):
+        args.eval_interval = 20000  # from config
+    if not hasattr(args, 'log_interval'):
+        args.log_interval = 1  # from config
+    if not hasattr(args, 'save_interval'):
+        args.save_interval = 100000  # from config
+    if not hasattr(args, 'deterministic_policy'):
+        args.deterministic_policy = True  # Use deterministic actions for grounding
+    
     rollout_policies = []
     
     for k in range(args.num_src):
@@ -212,6 +275,9 @@ def main():
     expt_path = os.path.join(base_path, expt_label)
     os.makedirs(expt_path, exist_ok=True)
     
+    # Initialize config manager for WandB
+    config_mgr.init('config.yaml')
+    
     # Initialize logger
     if not args.no_wb:
         logger = WbLogger(should_log_vids=True)
@@ -226,10 +292,10 @@ def main():
     # Load rollout policies
     if args.rollout_policy_path:
         rollout_policies_paths = args.rollout_policy_path.split(", ")
-    else:
-        # Default path structure
-        load_paths = f"data/models/initial_policies/{args.rollout_set}/{args.src_env}/"
-        rollout_policies_paths = sorted(glob.glob(os.path.join(load_paths, '*')))
+    # else:
+    #     # Default path structure
+    #     load_paths = f"data/models/initial_policies/{args.rollout_set}/{args.src_env}/"
+    #     rollout_policies_paths = sorted(glob.glob(os.path.join(load_paths, '*')))
     
     print(f"Loading rollout policies from: {rollout_policies_paths}")
     rollout_policies = load_rollout_policies(args, rollout_policies_paths)
