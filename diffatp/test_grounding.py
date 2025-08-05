@@ -4,10 +4,9 @@ import os
 
 def main():
     print("=" * 60)
-    print("🚀 Policy Grounding Test Script")
+    print(" Policy Grounding Test Script")
     print("=" * 60)
     
-    # ============== 여기서 설정을 직접 수정하세요! ==============
     
     # 1. 환경 설정
     src_env = "HalfCheetah-v2"  # 소스 환경
@@ -88,16 +87,16 @@ def main():
         
         print("=" * 60)
         if result.returncode == 0:
-            print("✅ GROUNDING TEST COMPLETED SUCCESSFULLY!")
+            print(" GROUNDING TEST COMPLETED SUCCESSFULLY!")
         else:
-            print("❌ GROUNDING TEST FAILED!")
+            print(" GROUNDING TEST FAILED!")
             print(f"Return code: {result.returncode}")
         print("=" * 60)
         
         return result.returncode == 0
         
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f" ERROR: {e}")
         return False
 
 if __name__ == "__main__":
