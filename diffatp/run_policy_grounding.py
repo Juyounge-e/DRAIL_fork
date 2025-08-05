@@ -27,55 +27,55 @@ from rlf.rl.loggers.base_logger import BaseLogger
 from rlf.exp_mgr import config_mgr
 
 
-def collect_demo(args, generate_demo=False, save_path=None, rollout_policies_paths=None):
-    """
-    Collect target transition samples (s,a,s') adapted for DRAIL project
+# def collect_demo(args, generate_demo=False, save_path=None, rollout_policies_paths=None):
+#     """
+#     Collect target transition samples (s,a,s') adapted for DRAIL project
     
-    :param args: (object) argument values of experiments
-    :param generate_demo: (bool) if false, read the location of stored data
-    :param save_path: (str) path to save data
-    :param rollout_policies_paths: (list) paths to rollout policies
-    """
-    if generate_demo:
-        data_save_dir = []
-        for k in range(args.num_src):
-            idx = (args.expt_number + k - 1) % len(rollout_policies_paths)
-            if args.n_episodes is not None:
-                data_save_dir_i = os.path.join(save_path,
-                                               f"{args.trg_env}_episodes_{args.n_episodes}_seed{idx}")
-            else:
-                data_save_dir_i = os.path.join(save_path,
-                                               f"{args.trg_env}_transitions_{args.n_transitions}_seed{idx}")
+#     :param args: (object) argument values of experiments
+#     :param generate_demo: (bool) if false, read the location of stored data
+#     :param save_path: (str) path to save data
+#     :param rollout_policies_paths: (list) paths to rollout policies
+#     """
+#     if generate_demo:
+#         data_save_dir = []
+#         for k in range(args.num_src):
+#             idx = (args.expt_number + k - 1) % len(rollout_policies_paths)
+#             if args.n_episodes is not None:
+#                 data_save_dir_i = os.path.join(save_path,
+#                                                f"{args.trg_env}_episodes_{args.n_episodes}_seed{idx}")
+#             else:
+#                 data_save_dir_i = os.path.join(save_path,
+#                                                f"{args.trg_env}_transitions_{args.n_transitions}_seed{idx}")
             
-            # Generate trajectory using current project structure
-            real_env = gym.make(args.trg_env)
-            # Here you would implement trajectory generation using your project's methods
-            # This is a placeholder - implement according to your project's trajectory generation
-            print(f"Would generate trajectory for {data_save_dir_i}")
+#             # Generate trajectory using current project structure
+#             real_env = gym.make(args.trg_env)
+#             # Here you would implement trajectory generation using your project's methods
+#             # This is a placeholder - implement according to your project's trajectory generation
+#             print(f"Would generate trajectory for {data_save_dir_i}")
             
-            data_save_dir_i = data_save_dir_i + ".npz"
-            data_save_dir.append(data_save_dir_i)
-    else:
-        data_save_dir = []
-        for k in range(args.num_src):
-            idx = (args.expt_number + k - 1) % len(rollout_policies_paths)
-            if args.n_episodes is not None:
-                data_save_dir_i = os.path.join(save_path,
-                                               f"{args.trg_env}_episodes_{args.n_episodes}_seed{idx}")
-            else:
-                data_save_dir_i = os.path.join(save_path,
-                                               f"{args.trg_env}_transitions_{args.n_transitions}_seed{idx}")
-            data_save_dir_i = data_save_dir_i + ".npz"
-            data_save_dir.append(data_save_dir_i)
+#             data_save_dir_i = data_save_dir_i + ".npz"
+#             data_save_dir.append(data_save_dir_i)
+#     else:
+#         data_save_dir = []
+#         for k in range(args.num_src):
+#             idx = (args.expt_number + k - 1) % len(rollout_policies_paths)
+#             if args.n_episodes is not None:
+#                 data_save_dir_i = os.path.join(save_path,
+#                                                f"{args.trg_env}_episodes_{args.n_episodes}_seed{idx}")
+#             else:
+#                 data_save_dir_i = os.path.join(save_path,
+#                                                f"{args.trg_env}_transitions_{args.n_transitions}_seed{idx}")
+#             data_save_dir_i = data_save_dir_i + ".npz"
+#             data_save_dir.append(data_save_dir_i)
 
-    for i in range(len(data_save_dir)):
-        print(f"Demo data path: {data_save_dir[i]}")
-        if os.path.isfile(data_save_dir[i]):
-            print(f"Loading Demo Data: {data_save_dir[i]}")
-        else:
-            print(f"Warning: Demo data not found at {data_save_dir[i]}")
+#     for i in range(len(data_save_dir)):
+#         print(f"Demo data path: {data_save_dir[i]}")
+#         if os.path.isfile(data_save_dir[i]):
+#             print(f"Loading Demo Data: {data_save_dir[i]}")
+#         else:
+#             print(f"Warning: Demo data not found at {data_save_dir[i]}")
 
-    return data_save_dir
+#     return data_save_dir
 
 
 class GroundingTrainingCallback:
