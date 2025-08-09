@@ -203,7 +203,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         
         # ✅ 여기서 args에 직접 넣어줌(0520)
         #self.args.src_obs_size = self.src_obs_size
-        discrim = self.get_discrim(base_net.output_shape[0], ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
+        discrim = self.get_discrim(state_dim,  ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
         return discrim.to(self.args.device)
 
     # def init(self, policy, args):
