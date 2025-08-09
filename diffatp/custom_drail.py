@@ -29,7 +29,7 @@ class DiffATPDiscriminator(Discriminator):
     def __init__(self, state_dim, action_dim, args, base_net, num_units=128):
         super(Discriminator, self).__init__()
         self.args = args
-        state_dim = self.args.src_obs_size
+        # state_dim = self.args.src_obs_size
         input_dim = state_dim + action_dim + state_dim
         # input_dim -= 2*action_dim
         print("❗️ input_dim to MLPConditionDiffusion:", input_dim)
@@ -193,14 +193,16 @@ class DiffATPDiscrim(DRAILDiscrim):
         self.step = 0
         
     def _create_discrim(self):
-        # ob_shape = rutils.get_obs_shape(self.policy.obs_space)
-        ob_shape = ob_shape = (self.src_obs_size,)
+        ob_shape = rutils.get_obs_shape(self.policy.obs_space)
+        # ob_shape = ob_shape = (self.src_obs_size,)
         ac_dim = rutils.get_ac_dim(self.action_space)
         base_net = self.policy.get_base_net_fn(ob_shape) 
+        # 0809
+        state_dim = rutils.get_obs_shape(self.policy.obs_space)[0]
         #* Change to Diffusion Model
-
+        
         # ✅ 여기서 args에 직접 넣어줌(0520)
-        self.args.src_obs_size = self.src_obs_size
+        #self.args.src_obs_size = self.src_obs_size
         discrim = self.get_discrim(base_net.output_shape[0], ac_dim, self.args, base_net, num_units=self.args.discrim_num_unit)
         return discrim.to(self.args.device)
 
@@ -294,7 +296,9 @@ class DiffATPDiscrim(DRAILDiscrim):
         if obsfilt is not None:
             state = obsfilt(state, update=False)
             
-        state = state[:, :self.args.src_obs_size]
+        # state = state[:, :self.args.src_obs_size]
+        # 0809       
+        state = state[:, :rutils.get_obs_shape(self.policy.obs_space)[0]]
         state = torch.tensor(state).to(self.args.device)
 
         return state
@@ -306,9 +310,9 @@ class DiffATPDiscrim(DRAILDiscrim):
             raw = state['raw_obs'] if other_state is None else other_state['raw_obs']
         else:
             raw = rutils.get_def_obs(state)
-    
-        return raw[:, :self.args.src_obs_size]
-
+            
+        # 0809
+        return raw[:, :rutils.get_obs_shape(self.policy.obs_space)[0]]
     
     def _compute_discrim_loss(self, agent_batch, expert_batch, obsfilt):
         expert_actions = expert_batch['actions'].to(self.args.device)
