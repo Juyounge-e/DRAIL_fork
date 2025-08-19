@@ -24,6 +24,8 @@ import math
 from drail.ddpm import MLPConditionDiffusion
 
 from drail.drail import Discriminator, DRAILDiscrim, cosine_beta_schedule
+#0818
+from diffatp.diffatp_ppo import DiffATPPPO
 
 class DiffATPDiscriminator(Discriminator):
     def __init__(self, state_dim, action_dim, args, base_net, num_units=128):
@@ -178,7 +180,7 @@ def get_default_discrim(state_dim, action_dim, args, base_net, num_units=128):
 
 
 class DiffATP(NestedAlgo):
-    def __init__(self, agent_updater=PPO(), get_discrim=None, src_obs_size=None):
+    def __init__(self, agent_updater=DiffATPPPO(), get_discrim=None, src_obs_size=None):
         super().__init__([DiffATPDiscrim(get_discrim, policy=agent_updater, src_obs_size=src_obs_size), agent_updater], 1)
 
 
@@ -288,7 +290,7 @@ class DiffATPDiscrim(DRAILDiscrim):
         state = state.cpu().numpy()
 
          # (2) 먼저 24차원으로 패딩 (obsfilt는 24차원 기준)
-        expected_dim = rutils.get_obs_shape(self.policy.obs_space)[0]
+        expected_dim = self.envs.observation_space.shape[0]
         if state.shape[1] < expected_dim:
             pad = np.zeros((state.shape[0], expected_dim - state.shape[1]))
             state = np.concatenate([state, pad], axis=1)
@@ -305,14 +307,11 @@ class DiffATPDiscrim(DRAILDiscrim):
     
 
     def _trans_agent_state(self, state, other_state=None):
-        # state = state[:, :self.args.src_obs_size]
         if not self.args.drail_state_norm:
-            raw = state['raw_obs'] if other_state is None else other_state['raw_obs']
-        else:
-            raw = rutils.get_def_obs(state)
-            
-        # 0809
-        return raw[:, :rutils.get_obs_shape(self.policy.obs_space)[0]]
+            if other_state is None:
+                return state['raw_obs']
+            return other_state['raw_obs']
+        return rutils.get_def_obs(state)
     
     def _compute_discrim_loss(self, agent_batch, expert_batch, obsfilt):
         expert_actions = expert_batch['actions'].to(self.args.device)
