@@ -55,7 +55,6 @@ class GroundedEnv(gym.Wrapper):
     def reset(self, **kwargs):
         self.latest_obs = self.env.reset(**kwargs)
         self.time_step_counter = 0
-        
         if self.num_simul > 1:
             idx = np.random.randint(0, self.num_simul)
             self.action_tf_policy = self.atp_list[idx]
@@ -63,69 +62,27 @@ class GroundedEnv(gym.Wrapper):
 
     def step(self, action):
         self.time_step_counter += 1
+        concat_sa = np.append(self.latest_obs, action)
+        delta_transformed_action, _ = self.action_tf_policy.predict(
+            concat_sa, deterministic=self.use_deterministic
+        )
 
-        # Convert action to tensor for policy input
-        if isinstance(action, np.ndarray):
-            action_tensor = torch.from_numpy(action).unsqueeze(0).float().to(self.args.device)
-        else:
-            action_tensor = action.unsqueeze(0).float().to(self.args.device)
-
-        lastest_obs_tensor = torch.from_numpy(self.latest_obs).unsqueeze(0).float().to(self.args.device)
-        
-        # Add policy index for ATP (state=17 + action=6 + policy_idx=1 = 24)
-        policy_index = torch.zeros(lastest_obs_tensor.shape[0], 1, device=lastest_obs_tensor.device)
-        concat_sa = torch.cat([lastest_obs_tensor, action_tensor, policy_index], dim=1)
-
-        # Get action transformation using rl-toolkit policy interface
-        step_info = get_empty_step_info()
-        with torch.no_grad():
-            self.action_tf_policy.eval()
-            ac_info = self.action_tf_policy.get_action(
-                concat_sa,
-                None,  # add_state
-                self.hidden_states,
-                self.eval_masks,
-                step_info
-            )
-            self.hidden_states = ac_info.hxs
-
-        # Extract delta transformation
-        delta_transformed_action = ac_info.take_action.squeeze(0).cpu().numpy()
-        
-        # Apply transformation
-        if isinstance(action, torch.Tensor):
-            action_np = action.cpu().numpy()
-        else:
-            action_np = action
-            
-        transformed_action = action_np + delta_transformed_action
+        transformed_action = action + delta_transformed_action
         transformed_action = np.clip(transformed_action, self.low, self.high)
 
-        # Step environment
         self.latest_obs, rew, done, info = self.env.step(transformed_action)
 
-        # Update eval masks for next step
-        self.eval_masks = torch.tensor(
-            [0.0 if done else 1.0],
-            dtype=torch.float32,
-            device=self.args.device,
-        ).unsqueeze(0)
-
         info['transformed_action'] = transformed_action
-        # info['delta_transformation'] = delta_transformed_action
-        # info['raw_action'] = action_np
-        
         if self.time_step_counter <= 1e4:
-            self.transformed_action_list.append(transformed_action.copy())
-            self.raw_actions_list.append(action_np.copy())
+            self.transformed_action_list.append(transformed_action)
+            self.raw_actions_list.append(action)
 
-        # Apply reward modification for specific environments
         if hasattr(self.env, 'unwrapped') and hasattr(self.env.unwrapped, 'spec'):
             if 'Hopper' in self.env.unwrapped.spec.id:
-                rew = rew - 1e-3 * np.square(action_np).sum() + 1e-3 * np.square(transformed_action).sum()
+                rew = rew - 1e-3 * np.square(action).sum() + 1e-3 * np.square(transformed_action).sum()
             elif 'HalfCheetah' in self.env.unwrapped.spec.id:
-                rew = rew - 0.1 * np.square(action_np).sum() + 0.1 * np.square(transformed_action).sum()
-                
+                rew = rew - 0.1 * np.square(action).sum() + 0.1 * np.square(transformed_action).sum()
+
         return self.latest_obs, rew, done, info
 
     def reset_saved_actions(self):
@@ -175,7 +132,6 @@ class GroundedEnv(gym.Wrapper):
         print(f"Mean delta transformed_action: {mean_delta}")
         print(f"Max delta: {max_delta}")
         
-        # Reduce sample size for plotting
         if len(raw_actions) > max_points:
             index = np.random.choice(len(raw_actions), max_points, replace=False)
             raw_actions = raw_actions[index]
@@ -189,7 +145,7 @@ class GroundedEnv(gym.Wrapper):
 
         # Create plot
         fig = plt.figure(figsize=(int(10*num_action_space), 8))
-        plt.rcParams['font.size'] = '16'  # Reduced font size for better compatibility
+        plt.rcParams['font.size'] = '16'  
         
         for act_num in range(num_action_space):
             ax = fig.add_subplot(1, num_action_space, act_num+1)
@@ -253,7 +209,7 @@ class GroundedEnv(gym.Wrapper):
             time_step_count += 1
             
             if not random and target_policy is not None:
-                # Use rl-toolkit policy interface
+                # Use rl-toolkit policy interface (predict을 변환)
                 obs_tensor = torch.from_numpy(obs).unsqueeze(0).float().to(self.args.device)
                 step_info = get_empty_step_info()
                 with torch.no_grad():
